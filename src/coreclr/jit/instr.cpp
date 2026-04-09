@@ -1950,18 +1950,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #elif defined(TARGET_ARM)
     assert(!varTypeIsSIMD(srcType));
     return INS_vldr;
-#elif defined(TARGET_S390X)
-    assert(!varTypeIsSIMD(srcType));
-
-    if (srcType == TYP_DOUBLE)
-    {
-        return INS_ldy;
-    }
-    else
-    {
-        assert(srcType == TYP_FLOAT);
-        return INS_ley;
-    }
 #elif defined(TARGET_LOONGARCH64)
     assert(!varTypeIsSIMD(srcType));
 
@@ -2287,17 +2275,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #elif defined(TARGET_ARM64)
     return INS_str;
 #elif defined(TARGET_S390X)
-    assert(!varTypeIsSIMD(dstType));
-
-    if (dstType == TYP_DOUBLE)
-    {
-        return INS_stdy;
-    }
-    else
-    {
-        assert(dstType == TYP_FLOAT);
-        return INS_stey;
-    }
+   return INS_st;
 #elif defined(TARGET_ARM)
     assert(!varTypeIsSIMD(dstType));
     return INS_vstr;
@@ -2659,26 +2637,8 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
     }
     unreached();
 }
-#elif defined(TARGET_S390X)
 
-instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
-{
-    switch (oper)
-    {
-        case GT_ADD:
-            return type == TYP_DOUBLE ? INS_adbr : INS_aebr;
-        case GT_SUB:
-            return type == TYP_DOUBLE ? INS_sdbr : INS_sebr;
-        case GT_MUL:
-            return type == TYP_DOUBLE ? INS_mdbr : INS_meebr;
-        case GT_DIV:
-            return type == TYP_DOUBLE ? INS_ddbr : INS_debr;
-        default:
-            unreached();
-    }
-}
-
-#endif // TARGET_S390X
+#endif // TARGET_ARM
 
 /*****************************************************************************
  *

@@ -862,6 +862,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //
 GenTree* Lowering::LowerCast(GenTree* tree)
 {
+    _ASSERTE(!"NYI");
     assert(tree->OperGet() == GT_CAST);
 
     JITDUMP("LowerCast for: ");
@@ -2836,8 +2837,13 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
+    //EX_THROW(HRException, (E_FAIL));
+    _ASSERTE(!"NYI");
+#if 0 
     assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
-    // S390X doesnot have a div with immediate 
+#endif
+
+    // ARM doesn't have a div instruction with an immediate operand
 }
 
 //------------------------------------------------------------------------
@@ -2939,7 +2945,72 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
-    // S390X does not have contained cast
+    _ASSERTE(!"NYI");
+#if 0 
+    GenTree*  castOp     = node->CastOp();
+    var_types castToType = node->CastToType();
+
+    if (comp->opts.OptimizationEnabled() && !node->gtOverflow() && varTypeIsIntegral(castOp) &&
+        varTypeIsIntegral(castToType))
+    {
+        // Most integral casts can be re-expressed as loads, except those that would be changing the sign.
+        if (!varTypeIsSmall(castOp) || (varTypeIsUnsigned(castOp) == node->IsZeroExtending()))
+        {
+            bool srcIsContainable = false;
+
+            // Make sure to only contain indirections codegen can handle.
+            if (castOp->OperIs(GT_IND))
+            {
+                GenTreeIndir* indir = castOp->AsIndir();
+
+                if (!indir->IsVolatile() && !indir->IsUnaligned())
+                {
+                    GenTree* addr = indir->Addr();
+
+                    if (!addr->isContained())
+                    {
+                        srcIsContainable = true;
+                    }
+                    else if (addr->OperIs(GT_LEA) && !addr->AsAddrMode()->HasIndex())
+                    {
+                        var_types loadType = varTypeIsSmall(castToType) ? castToType : castOp->TypeGet();
+
+                        if (emitter::emitIns_valid_imm_for_ldst_offset(addr->AsAddrMode()->Offset(),
+                                                                       emitTypeSize(loadType)))
+                        {
+                            srcIsContainable = true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                assert(castOp->OperIsLocalRead() || !IsContainableMemoryOp(castOp));
+                srcIsContainable = true;
+            }
+
+            if (srcIsContainable)
+            {
+                if (IsContainableMemoryOp(castOp) && IsSafeToContainMem(node, castOp))
+                {
+                    MakeSrcContained(node, castOp);
+                }
+                else if (IsSafeToMarkRegOptional(node, castOp))
+                {
+                    castOp->SetRegOptional();
+                }
+            }
+        }
+    }
+
+#ifdef TARGET_ARM
+    if (varTypeIsLong(castOp))
+    {
+        assert(castOp->OperGet() == GT_LONG);
+        MakeSrcContained(node, castOp);
+    }
+#endif // TARGET_ARM
+#endif
 }
 
 //------------------------------------------------------------------------

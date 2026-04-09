@@ -7008,12 +7008,8 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 #endif
                             ))
     {
-#if !defined(TARGET_S390X)
-        // Note that stack offsets are negative or equal to zero except for s390x
+        // Note that stack offsets are negative or equal to zero
         assert(stkOffs <= 0);
-#elif
-        assert(stkOffs >= 0);
-#endif
 
         // alignment padding
         unsigned pad = 0;
@@ -7050,11 +7046,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         }
         // Will the pad ever be anything except 4? Do we put smaller-than-4-sized objects on the stack?
         lvaIncrementFrameSize(pad);
-#if defined(TARGET_S390X)
-        stkOffs += pad;
-#elif
         stkOffs -= pad;
-#endif
 
 #ifdef DEBUG
         if (verbose)
